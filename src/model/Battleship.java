@@ -1,3 +1,5 @@
+package model;
+
 public class Battleship {
     private static Player turn; // pointer to player who's turn it is
     String[] shiptypes = {"Carrier", "Battleship", "Cruiser", "Submarine", "Destroyer"};
