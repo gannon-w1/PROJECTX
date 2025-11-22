@@ -2,8 +2,7 @@ package view;
 
 import javax.swing.*; 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 
 public class BattleshipWindow extends JFrame {
 	
@@ -14,7 +13,8 @@ public class BattleshipWindow extends JFrame {
         setSize(900, 600);
         setLayout(new BorderLayout());
 
-        BoardPanel board = new BoardPanel();
+        DragController drag = new  DragController();
+        BoardPanel board = new BoardPanel(drag);
         add(board, BorderLayout.CENTER);
 
         //making the sidebar for buttons that specify what ship is being used
@@ -40,33 +40,51 @@ public class BattleshipWindow extends JFrame {
         buttonPanel.add(destroyerButton);
         buttonPanel.add(rotateButton);
 
-        carrierButton.addActionListener(new ShipLengthListener(board, 5));
-        battleshipButton.addActionListener(new ShipLengthListener(board, 4));
-        cruiserButton.addActionListener(new ShipLengthListener(board, 3));
-        submarineButton.addActionListener(new ShipLengthListener(board, 2));
-        destroyerButton.addActionListener(new ShipLengthListener(board, 1));
-        rotateButton.addActionListener(e -> board.toggleHorizontal());
+        carrierButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                drag.startDrag(1, 5, board.isHorizontal() , board.getCarrierH(), board.getCarrierV());
+            }
+        });
+
+        battleshipButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                drag.startDrag(2, 4, board.isHorizontal() , board.getBattleshipH(), board.getBattleshipV());
+            }
+        });
+
+        cruiserButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                drag.startDrag(3, 3, board.isHorizontal() , board.getCruiserH(), board.getCruiserV());
+            }
+        });
+
+        submarineButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                drag.startDrag(4, 2, board.isHorizontal() , board.getSubmarineH(), board.getSubmarineV());
+            }
+        });
+
+        destroyerButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                drag.startDrag(5, 1, board.isHorizontal() , board.getDestroyerH(), board.getDestroyerV());
+            }
+        });
+
+        rotateButton.addActionListener(e -> {
+            drag.horizontal = !drag.horizontal;
+            board.toggleHorizontal();
+        });
 
         sidebar.add(buttonPanel, BorderLayout.NORTH);
         add(sidebar, BorderLayout.EAST);
 
         setVisible(true);
 	}
-
-    private static class ShipLengthListener implements ActionListener {
-
-        private final BoardPanel board;
-        private final int length;
-
-        public ShipLengthListener(BoardPanel b, int len) {
-            board = b;
-            length = len;
-        }
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            board.setShipLength(length);
-        }
-    }
 
 	public static void main(String[] args) {
 		new BattleshipWindow(); 

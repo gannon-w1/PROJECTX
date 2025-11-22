@@ -12,9 +12,8 @@ public class BoardPanel extends JPanel {
 	private final int gridSize = 10;
 
     private final ArrayList<PlacedShip> placedShips = new ArrayList<>();
-    private int shipLength;
     private boolean horizontal = true;
-    private int selectedShipType = -1;
+    private boolean[] shipPlaced = new boolean[6];
 
     private final Image carrierH, carrierV;
     private final Image battleshipH, battleshipV;
@@ -22,8 +21,11 @@ public class BoardPanel extends JPanel {
     private final Image submarineH, submarineV;
     private final Image destroyerH, destroyerV;
 
+    private DragController drag;
+
     //constructor
-	public BoardPanel() {
+	public BoardPanel(DragController drag) {
+        this.drag = drag;
         setPreferredSize(new Dimension(cellSize * gridSize, cellSize * gridSize));
 
         //Load the images
@@ -42,67 +44,135 @@ public class BoardPanel extends JPanel {
         battleshipH = loadImage("/view/resources/ships/battleshipH.png");
         battleshipV = loadImage("/view/resources/ships/battleshipV.png");
 
+        addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if(drag.dragging) {
+                    drag.ghostRow = e.getY() / cellSize;
+                    drag.ghostCol = e.getX() / cellSize;
+                    repaint();
+                }
+            }
+        });
+        addMouseMotionListener(new MouseMotionAdapter() {
+        @Override
+            public void mouseMoved(MouseEvent e) {
+                if(drag.dragging) {
+                    drag.ghostRow = e.getY() / cellSize;
+                    drag.ghostCol = e.getX() / cellSize;
+                    repaint();
+                }
+            }
+        });
         //mouse listener
         addMouseListener(new MouseAdapter() {
+
             @Override
-            public void mousePressed(MouseEvent e) {
-                int row = e.getY() / cellSize;
-                int col = e.getX() / cellSize;
-
-                if(selectedShipType == -1) {
-                    System.out.println("Select a ship first!");
+            public void mouseReleased(MouseEvent e) {
+                if(!drag.dragging) {
                     return;
                 }
 
-                if(alreadyPlaced(selectedShipType)) {
-                    System.out.println("Ship has already been placed!");
-                    return;
-                }
-                //check boundaries
-                if(horizontal && col + shipLength > gridSize) {
-                    System.out.println("Doesn't fit horizontally");
+                int row = drag.ghostRow;
+                int col = drag.ghostCol;
+
+                int length = drag.shipLength;
+                boolean horizontal = drag.horizontal;
+                int type = drag.shipType;
+
+                //bounds checking
+                if(horizontal && col + length > gridSize) {
+                    System.out.println("Doesn't fit horizontallly");
+                    drag.stopDrag();
+                    repaint();
                     return;
                 }
 
-                if(!horizontal && row + shipLength > gridSize) {
+                if(!horizontal && row + length > gridSize) {
                     System.out.println("Doesn't fit vertically");
+                    drag.stopDrag();
+                    repaint();
                     return;
                 }
 
-                //check for overlap
-                if(overlapDetection(row, col, shipLength, horizontal)) {
-                    System.out.println("Overlaps another ship!");
+                //overlap check
+                if(overlapDetection(row, col, length, horizontal)) {
+                    System.out.println("Overlaps another ship");
+                    drag.stopDrag();
+                    repaint();
                     return;
                 }
 
-                //If none of the chekcs fail, place ship and save
-                placedShips.add(new PlacedShip(row, col, shipLength, horizontal, selectedShipType));
+                //doesn't place ship if its already on the board
+                if(shipPlaced[type]) {
+                    System.out.println("Ship already placed");
+                    drag.stopDrag();
+                    repaint();
+                    return;
+                }
 
+                //place ship
+                placedShips.add(new PlacedShip(row, col, length, horizontal, type));
+                shipPlaced[type] = true;
+
+                drag.stopDrag();
                 repaint();
             }
         });
-
     }
 
+    //Getter functions
+    public Image getCarrierH() {
+        return carrierH;
+    }
+
+    public Image getCarrierV() {
+        return carrierV;
+    }
+
+    public Image getDestroyerH() {
+        return destroyerH;
+    }
+
+    public Image getDestroyerV() {
+        return destroyerV;
+    }
+
+    public Image getBattleshipH() {
+        return battleshipH;
+    }
+
+    public Image getBattleshipV() {
+        return battleshipV;
+    }
+
+    public Image getCruiserH() {
+        return cruiserH;
+    }
+
+    public Image getCruiserV() {
+        return cruiserV;
+    }
+
+    public Image getSubmarineH() {
+        return submarineH;
+    }
+
+    public Image getSubmarineV() {
+        return submarineV;
+    }
+
+    public boolean isHorizontal() {
+        return horizontal;
+    }
+
+    public int getCellSize() {
+        return cellSize;
+    }
     //toggle for horizontal or vertical
     public void toggleHorizontal() {
         horizontal = !horizontal;
         System.out.println("Orientation: " + (horizontal ? "Horizontal" : "Vertical"));
-    }
-
-    //sets the ship length/type
-    public void setShipLength(int len) {
-        this.shipLength = len;
-
-        switch (len) {
-            case 5: selectedShipType = 1; break;
-            case 4: selectedShipType = 2; break;
-            case 3: selectedShipType = 3; break;
-            case 2: selectedShipType = 4; break;
-            case 1: selectedShipType = 5; break;
-        }
-
-        System.out.println("Ship length: " + shipLength);
     }
 
     private boolean overlapDetection(int row, int col, int length, boolean horizontal) {
@@ -140,14 +210,24 @@ public class BoardPanel extends JPanel {
 
     }
 
-    //checks if a ship type is already placed
-    private boolean alreadyPlaced(int type) {
-        for(PlacedShip ship : placedShips) {
-            if(ship.type == type) {
-                return true;
-            }
-        }
-        return false;
+    private void drawGhostShip(Graphics g) {
+        if(!drag.dragging)
+            return;
+
+        Image img = drag.horizontal ? drag.imageH : drag.imageV;
+        if(img == null)
+            return;
+
+        int x = drag.ghostCol * cellSize;
+        int y = drag.ghostRow * cellSize;
+
+        int w = drag.horizontal ? drag.shipLength * cellSize : cellSize;
+        int h = drag.horizontal ? cellSize : drag.shipLength * cellSize;
+
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+        g2.drawImage(img, x, y, w, h, this);
+        g2.dispose();
     }
 
     @Override
@@ -172,6 +252,7 @@ public class BoardPanel extends JPanel {
 
             g.drawImage(img, x, y, w, h, this);
         }
+        drawGhostShip(g);
 	}
 	
 }
