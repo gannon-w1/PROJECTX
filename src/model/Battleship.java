@@ -1,61 +1,49 @@
 package model;
 
 public class Battleship {
-    private static Player turn; // pointer to player who's turn it is
-    String[] shiptypes = {"Carrier", "Battleship", "Cruiser", "Submarine", "Destroyer"};
-    /// taken from Battleship, the ship types are as follows:
-    ///  Carrier (5 squares), Battleship (4 squares), Cruiser (3 squares), Submarine (3 squares), Destroyer (2 squares)
-    String[] directions = {"North", "East", "South", "West"}; // directions
+private final Player player1;
+private final Player player2;
+private Player turn; // pointer to current player who's turn it is
+
+public Battleship() {
+    player1 = new Player();
+    player2 = new Player();
+    turn = player1;
+}
+
+public Player getCurrentPlayer() { return turn; }
+public Player getOpponent() { return turn == player1 ? player2 : player1; }
+
+// Turn Functions
+public void nextTurn() { 
+    if(turn == player1){
+        turn  = player2;
+    }else {
+        turn = player1;
+    }
+}
+
+public String fireAt(int row, int col) {
+    String result = turn.fireAt(getOpponent(), row, col);
+    if(!result.equals("redundant") || !result.equals("hit")) nextTurn(); // only switch turns if miss
+    return result;
+}
+
+// Game Condition Functions
+
+// check if game is over
+public boolean isGameOver() { 
+    return player1.allShipsSunk() || player2.allShipsSunk(); // true if all ships are sunk for any player, else false
+}
+
+// get winner (null if game not over)
+public Player getWinner() { 
+    if(!isGameOver()) return null; // if game isn't over, no need to check for winner
+    return player1.allShipsSunk() ? player2 : player1; 
+    // returns player2 as winner if player1's ships are all sunk, else player1
+}
+
+// Testing
+public static void main(String[] args) { }
     
-    // game control functions
-    public static void startNewGame(){
-
-    }
-
-    public static void resetGame(){
-
-    }
-
-    // ship functions
-    protected static boolean canPlaceShip(Player p, String type, int row, int col, String direction){
-        return true;
-    }
-
-    protected static void placeShip(Player p, String type, int row, int col, String direction){
-        
-    }
-
-    protected static boolean allShipsPlaced(Player p){
-        return false;
-    }
-
-    // game mechanics
-    protected static boolean fireAt(Player attacker, int row, int col){
-        // true if hit, false if missed
-        return false;
-    }
-
-    // game condition functions
-    protected static boolean isGameOver(){
-        return false;
-    }
-
-    /*protected static Player getWinner(){
-
-    }*/
-
-    // turn functions
-    protected static Player getCurrentTurn(){
-        return turn;
-    }
-
-    protected static void switchTurn(){
-        
-    }
-
-    // board functions
-    /*protected static int[][] getBoard(Player p){
-        
-    }*/
-
 }
