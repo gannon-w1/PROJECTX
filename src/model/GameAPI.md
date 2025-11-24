@@ -1,6 +1,6 @@
 # Battleship Backend API
 
-This document defines the backend “contract” for the Battleship game.
+This document defines the backend functionality for the Battleship game.
 It lists all classes, methods, their purposes, inputs, outputs, and notes for frontend integration.
 
 ---
