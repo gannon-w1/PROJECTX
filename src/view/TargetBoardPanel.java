@@ -15,10 +15,12 @@ public class TargetBoardPanel extends JPanel {
     private final int[][] shotsP2 = new int[gridSize][gridSize];
 
     private final Battleship game;
+    private final JLabel statusLabel;
     private boolean gameOver = false;
 
-    public TargetBoardPanel(Battleship game) {
+    public TargetBoardPanel(Battleship game, JLabel statusLabel) {
         this.game = game;
+        this.statusLabel = statusLabel;
         setPreferredSize(new Dimension(cellSize * gridSize, cellSize * gridSize));
 
         addMouseListener(new MouseAdapter() {
@@ -76,6 +78,8 @@ public class TargetBoardPanel extends JPanel {
                             "Battleship",
                             JOptionPane.INFORMATION_MESSAGE
                     );
+                } else {
+                    updateStatusLabel();
                 }
             }
         });
@@ -85,6 +89,13 @@ public class TargetBoardPanel extends JPanel {
         return (game.getCurrentPlayer() == game.getPlayer1() ? shotsP1 : shotsP2);
     }
 
+    private void updateStatusLabel() {
+        if (game.getCurrentPlayer() == game.getPlayer1()) {
+            statusLabel.setText("Player 1's turn.");
+        } else {
+            statusLabel.setText("Player 2's turn.");
+        }
+    }
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);

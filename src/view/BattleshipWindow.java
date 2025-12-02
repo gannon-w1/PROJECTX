@@ -12,6 +12,7 @@ public class BattleshipWindow extends JFrame {
     private final BoardPanel playerBoard;
     private final TargetBoardPanel enemyBoard;
     private final JPanel centerPanel;
+    private final JLabel statusLabel;
     private boolean player1Done = false;
 
 	public BattleshipWindow() {
@@ -20,27 +21,33 @@ public class BattleshipWindow extends JFrame {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(900, 600);
         setLayout(new BorderLayout());
+        getContentPane().setBackground(new Color(230, 230, 240)); // light gray
+        setResizable(false);
+
+        statusLabel = new JLabel("Place your ships.");
+        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        statusLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+        add(statusLabel, BorderLayout.SOUTH);
 
         game = new Battleship();
         DragController drag = new  DragController();
 
         playerBoard = new BoardPanel(drag);
-        enemyBoard = new TargetBoardPanel(game);
+        enemyBoard = new TargetBoardPanel(game, statusLabel);
 
         centerPanel = new JPanel(new BorderLayout());
         centerPanel.add(playerBoard, BorderLayout.CENTER);
         add(centerPanel, BorderLayout.CENTER);
 
-        JLabel statusLabel = new JLabel("Place your ships.");
-        add(statusLabel, BorderLayout.SOUTH);
-
         //making the sidebar for buttons that specify what ship is being used
         JPanel sidebar = new JPanel(new BorderLayout());
-        sidebar.setPreferredSize(new Dimension(160, 0));
+        sidebar.setPreferredSize(new Dimension(180, 0));
+        sidebar.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new GridLayout(0, 1, 5, 5));
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        buttonPanel.setLayout(new GridLayout(0, 1, 8, 8));
+        buttonPanel.setBorder(BorderFactory.createTitledBorder("Controls"));
 
         //create buttons
         JButton carrierButton = new JButton("Carrier(5)");
@@ -170,7 +177,7 @@ public class BattleshipWindow extends JFrame {
             centerPanel.add(enemyBoard, BorderLayout.CENTER);
             centerPanel.revalidate();
             centerPanel.repaint();
-            statusLabel.setText("Both players ready. Player 1: start firing on the right grid.");
+            statusLabel.setText("Player 1's turn");
         });
 
 
