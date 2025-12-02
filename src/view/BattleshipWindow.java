@@ -1,21 +1,38 @@
 package view;
 
+import model.Battleship;
+import model.Player;
+
 import javax.swing.*; 
 import java.awt.*;
 import java.awt.event.*;
 
 public class BattleshipWindow extends JFrame {
-	
+    private final Battleship game;
+    private final BoardPanel playerBoard;
+    private final TargetBoardPanel enemyBoard;
+    private final JPanel centerPanel;
+    private boolean player1Done = false;
+
 	public BattleshipWindow() {
 		super("Battleship");
-		
+
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(900, 600);
         setLayout(new BorderLayout());
 
+        game = new Battleship();
         DragController drag = new  DragController();
-        BoardPanel board = new BoardPanel(drag);
-        add(board, BorderLayout.CENTER);
+
+        playerBoard = new BoardPanel(drag);
+        enemyBoard = new TargetBoardPanel(game);
+
+        centerPanel = new JPanel(new BorderLayout());
+        centerPanel.add(playerBoard, BorderLayout.CENTER);
+        add(centerPanel, BorderLayout.CENTER);
+
+        JLabel statusLabel = new JLabel("Place your ships.");
+        add(statusLabel, BorderLayout.SOUTH);
 
         //making the sidebar for buttons that specify what ship is being used
         JPanel sidebar = new JPanel(new BorderLayout());
@@ -32,6 +49,8 @@ public class BattleshipWindow extends JFrame {
         JButton submarineButton = new JButton("Submarine(2)");
         JButton destroyerButton = new JButton("Destroyer(1)");
         JButton rotateButton = new JButton("Rotate");
+        JButton readyButton = new JButton("Ready");
+        JButton resetButton = new JButton("Reset");
 
         buttonPanel.add(carrierButton);
         buttonPanel.add(battleshipButton);
@@ -39,52 +58,144 @@ public class BattleshipWindow extends JFrame {
         buttonPanel.add(submarineButton);
         buttonPanel.add(destroyerButton);
         buttonPanel.add(rotateButton);
+        buttonPanel.add(readyButton);
+        buttonPanel.add(resetButton);
 
         carrierButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                drag.startDrag(1, 5, board.isHorizontal() , board.getCarrierH(), board.getCarrierV());
+                drag.startDrag(1, 5, playerBoard.isHorizontal() , playerBoard.getCarrierH(), playerBoard.getCarrierV());
             }
         });
 
         battleshipButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                drag.startDrag(2, 4, board.isHorizontal() , board.getBattleshipH(), board.getBattleshipV());
+                drag.startDrag(2, 4, playerBoard.isHorizontal() , playerBoard.getBattleshipH(), playerBoard.getBattleshipV());
             }
         });
 
         cruiserButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                drag.startDrag(3, 3, board.isHorizontal() , board.getCruiserH(), board.getCruiserV());
+                drag.startDrag(3, 3, playerBoard.isHorizontal() , playerBoard.getCruiserH(), playerBoard.getCruiserV());
             }
         });
 
         submarineButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                drag.startDrag(4, 2, board.isHorizontal() , board.getSubmarineH(), board.getSubmarineV());
+                drag.startDrag(4, 2, playerBoard.isHorizontal() , playerBoard.getSubmarineH(), playerBoard.getSubmarineV());
             }
         });
 
         destroyerButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                drag.startDrag(5, 1, board.isHorizontal() , board.getDestroyerH(), board.getDestroyerV());
+                drag.startDrag(5, 1, playerBoard.isHorizontal() , playerBoard.getDestroyerH(), playerBoard.getDestroyerV());
             }
         });
 
         rotateButton.addActionListener(e -> {
             drag.horizontal = !drag.horizontal;
-            board.toggleHorizontal();
+            playerBoard.toggleHorizontal();
         });
+
+        readyButton.addActionListener(e -> {
+            if (!playerBoard.allShipsPlaced()) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "You must place all 5 ships before continuing.",
+                        "Ships not placed.",
+                        JOptionPane.WARNING_MESSAGE
+                );
+                return;
+            }
+
+            if (!player1Done) {
+                //FIRST PRESS: save Player 1 ships
+                Player p1 = game.getPlayer1();
+
+                for (view.PlacedShip s : playerBoard.getPlacedShips()) {
+                    model.PlacedShip backendShip =
+                            new model.PlacedShip(s.row, s.col, s.length, s.horizontal, s.type);
+                    boolean ok = p1.placeShip(backendShip);
+                    if (!ok) {
+                        System.err.println("Backend rejected P1 ship type " + s.type);
+                    }
+                }
+
+                player1Done = true;
+
+                // Clear the GUI board for Player 2 placement
+                playerBoard.resetBoard();
+
+                // Re-enable buttons in case they were disabled
+                carrierButton.setEnabled(true);
+                battleshipButton.setEnabled(true);
+                cruiserButton.setEnabled(true);
+                submarineButton.setEnabled(true);
+                destroyerButton.setEnabled(true);
+                rotateButton.setEnabled(true);
+                readyButton.setEnabled(true);
+
+                statusLabel.setText("Player 2: place your ships.");
+                return;
+            }
+
+            //SECOND PRESS: save Player 2 ships and start game
+            Player p2 = game.getPlayer2();
+
+            for (view.PlacedShip s : playerBoard.getPlacedShips()) {
+                model.PlacedShip backendShip =
+                        new model.PlacedShip(s.row, s.col, s.length, s.horizontal, s.type);
+                boolean ok = p2.placeShip(backendShip);
+                if (!ok) {
+                    System.err.println("Backend rejected P2 ship type " + s.type);
+                }
+            }
+
+            // Now lock placement and disable ship-selection buttons
+            playerBoard.lockPlacement();
+
+            carrierButton.setEnabled(false);
+            battleshipButton.setEnabled(false);
+            cruiserButton.setEnabled(false);
+            submarineButton.setEnabled(false);
+            destroyerButton.setEnabled(false);
+            rotateButton.setEnabled(false);
+            readyButton.setEnabled(false);
+
+            centerPanel.removeAll();
+            centerPanel.add(enemyBoard, BorderLayout.CENTER);
+            centerPanel.revalidate();
+            centerPanel.repaint();
+            statusLabel.setText("Both players ready. Player 1: start firing on the right grid.");
+        });
+
+
+        resetButton.addActionListener(e -> {
+            playerBoard.resetBoard();
+
+            carrierButton.setEnabled(true);
+            battleshipButton.setEnabled(true);
+            cruiserButton.setEnabled(true);
+            submarineButton.setEnabled(true);
+            destroyerButton.setEnabled(true);
+            rotateButton.setEnabled(true);
+            readyButton.setEnabled(true);
+
+            statusLabel.setText("Place your ships.");
+        });
+
+
 
         sidebar.add(buttonPanel, BorderLayout.NORTH);
         add(sidebar, BorderLayout.EAST);
 
         setVisible(true);
 	}
+
 
 	public static void main(String[] args) {
 		new BattleshipWindow(); 

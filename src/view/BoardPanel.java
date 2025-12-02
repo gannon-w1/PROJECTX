@@ -13,7 +13,7 @@ public class BoardPanel extends JPanel {
 
     private final ArrayList<PlacedShip> placedShips = new ArrayList<>();
     private boolean horizontal = true;
-    private boolean[] shipPlaced = new boolean[6];
+    private final boolean[] shipPlaced = new boolean[6];
 
     private final Image carrierH, carrierV;
     private final Image battleshipH, battleshipV;
@@ -21,7 +21,8 @@ public class BoardPanel extends JPanel {
     private final Image submarineH, submarineV;
     private final Image destroyerH, destroyerV;
 
-    private DragController drag;
+    private final DragController drag;
+    private boolean placementLocked = false;
 
     //constructor
 	public BoardPanel(DragController drag) {
@@ -69,6 +70,11 @@ public class BoardPanel extends JPanel {
 
             @Override
             public void mouseReleased(MouseEvent e) {
+                if(placementLocked) {
+                    drag.stopDrag();
+                    return;
+                }
+
                 if(!drag.dragging) {
                     return;
                 }
@@ -166,9 +172,6 @@ public class BoardPanel extends JPanel {
         return horizontal;
     }
 
-    public int getCellSize() {
-        return cellSize;
-    }
     //toggle for horizontal or vertical
     public void toggleHorizontal() {
         horizontal = !horizontal;
@@ -254,5 +257,34 @@ public class BoardPanel extends JPanel {
         }
         drawGhostShip(g);
 	}
-	
+
+    public boolean allShipsPlaced() {
+        for(int i = 1; i <= 5; i++) {
+            if(!shipPlaced[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public java.util.List<PlacedShip> getPlacedShips() {
+        return placedShips;
+    }
+
+    public void resetBoard() {
+        placedShips.clear();
+        for(int i = 1; i < shipPlaced.length; i++) {
+            shipPlaced[i] = false;
+        }
+        placementLocked = false;
+        if(drag != null) {
+            drag.stopDrag();
+        }
+        repaint();
+    }
+
+    public void lockPlacement() {
+        placementLocked = true;
+    }
+
 }
