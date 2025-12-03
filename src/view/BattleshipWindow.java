@@ -24,7 +24,7 @@ public class BattleshipWindow extends JFrame {
         getContentPane().setBackground(new Color(230, 230, 240)); // light gray
         setResizable(false);
 
-        statusLabel = new JLabel("Place your ships.");
+        statusLabel = new JLabel("Player 1: place your ships.");
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
         statusLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
@@ -178,6 +178,9 @@ public class BattleshipWindow extends JFrame {
             centerPanel.revalidate();
             centerPanel.repaint();
             statusLabel.setText("Player 1's turn");
+
+            //remove button to reset ship placement after game has started
+            resetButton.setVisible(false);
         });
 
 
@@ -192,7 +195,8 @@ public class BattleshipWindow extends JFrame {
             rotateButton.setEnabled(true);
             readyButton.setEnabled(true);
 
-            statusLabel.setText("Place your ships.");
+            String placingPlayer = player1Done ? "Player 2" : "Player 1";
+            statusLabel.setText(placingPlayer + ": place your ships.");
         });
 
 

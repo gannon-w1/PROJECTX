@@ -21,9 +21,9 @@ public class TargetBoardPanel extends JPanel {
     private final JLabel statusLabel;
     private boolean gameOver = false;
 
-    private Clip hitClip;
-    private Clip missClip;
-    private Clip sunkClip;
+    private final Clip hitClip;
+    private final Clip missClip;
+    private final Clip sunkClip;
 
     private JPanel turnOverlay;
     private String currentTurnText = "";
@@ -112,8 +112,8 @@ public class TargetBoardPanel extends JPanel {
                         playClip(missClip);
 
                         String nextPlayer = (game.getCurrentPlayer() == game.getPlayer1())
-                                ? "Player 2"
-                                : "Player 1";
+                                ? "Player 1"
+                                : "Player 2";
                         currentTurnText = nextPlayer + "'s Turn";
 
                         new javax.swing.Timer(250, ev -> {
@@ -144,17 +144,19 @@ public class TargetBoardPanel extends JPanel {
                             JOptionPane.YES_NO_OPTION
                     );
 
+                    java.awt.Window win = SwingUtilities.getWindowAncestor(TargetBoardPanel.this);
                     if (choice == JOptionPane.YES_OPTION) {
                         // Find the window that contains this panel
-                        java.awt.Window win = SwingUtilities.getWindowAncestor(TargetBoardPanel.this);
                         if (win instanceof BattleshipWindow) {
                             win.dispose();              // close old game window
                             new BattleshipWindow();     // start fresh game
                         }
                     } else {
                         // No = just leave the final board shown
-                        statusLabel.setText("Game over! " + winnerText + " wins.");
+                        win.dispose();
                     }
+                } else {
+                    updateStatusLabel();
                 }
             }
         });
