@@ -2,10 +2,13 @@ package view;
 
 import model.Battleship;
 
+import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+
+import java.io.IOException;
 
 public class TargetBoardPanel extends JPanel {
     private final int cellSize = 40;
@@ -18,10 +21,58 @@ public class TargetBoardPanel extends JPanel {
     private final JLabel statusLabel;
     private boolean gameOver = false;
 
+    private Clip hitClip;
+    private Clip missClip;
+    private Clip sunkClip;
+
+    private JPanel turnOverlay;
+    private String currentTurnText = "";
+
     public TargetBoardPanel(Battleship game, JLabel statusLabel) {
         this.game = game;
         this.statusLabel = statusLabel;
         setPreferredSize(new Dimension(cellSize * gridSize, cellSize * gridSize));
+
+        turnOverlay = new JPanel(){
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+
+                //dims the background
+                g.setColor(new Color(0,0,0,150));
+                g.fillRect(0, 0, getWidth(), getHeight());
+
+                //turn next
+                g.setColor(Color.white);
+                g.setFont(new Font("Serif", Font.BOLD, 36));
+
+                String text = currentTurnText;
+                int textWidth = g.getFontMetrics().stringWidth(text);
+
+                g.drawString(text, (getWidth() - textWidth) / 2, getHeight() / 2);
+            }
+        };
+
+        turnOverlay.setOpaque(false);
+        turnOverlay.setVisible(true);
+
+        turnOverlay.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                turnOverlay.setVisible(false);
+                repaint();
+            }
+        });
+
+        setLayout(null);
+        turnOverlay.setBounds(0, 0, cellSize * gridSize, cellSize * gridSize);
+        add(turnOverlay);
+
+
+        //load sounds
+        hitClip = loadClip("/view/sounds/Hit.wav");
+        missClip = loadClip("/view/sounds/Miss.wav");
+        sunkClip = loadClip("/view/sounds/Sunk.wav");
 
         addMouseListener(new MouseAdapter() {
             @Override
@@ -48,11 +99,29 @@ public class TargetBoardPanel extends JPanel {
 
                 switch (result) {
                     case "hit":
+                        shots[row][col] = 2;
+                        playClip(hitClip);
+                        break;
                     case "sunk":
-                        shots[row][col] = 2;   // hit
+                        shots[row][col] = 2;   // sunk
+                        playClip(sunkClip);
                         break;
                     case "miss":
                         shots[row][col] = 1;   // miss
+                        playClip(missClip);
+
+                        String nextPlayer = (game.getCurrentPlayer() == game.getPlayer1())
+                                ? "Player 2"
+                                : "Player 1";
+                        currentTurnText = nextPlayer + "'s Turn";
+
+                        new javax.swing.Timer(250, ev -> {
+                            turnOverlay.setVisible(true);
+                            turnOverlay.repaint();
+                        }) {
+                            {
+                                setRepeats(false);
+                            }}.start();
                         break;
                     case "redundant":
                     case "invalid":
@@ -62,24 +131,29 @@ public class TargetBoardPanel extends JPanel {
                 }
 
                 repaint();
-                if(game.isGameOver()) {
+                if (game.isGameOver()) {
                     gameOver = true;
                     var winner = game.getWinner();
-                    String winnerText;
-                    if(winner == game.getPlayer1()) {
-                        winnerText = "Player 1";
-                    } else {
-                        winnerText = "Player 2";
-                    }
+                    String winnerText = (winner == game.getPlayer1()) ? "Player 1" : "Player 2";
 
-                    JOptionPane.showMessageDialog(
+                    int choice = JOptionPane.showConfirmDialog(
                             TargetBoardPanel.this,
-                            "Game over! " + winnerText + " wins!",
+                            "Game over! " + winnerText + " wins!\nPlay again?",
                             "Battleship",
-                            JOptionPane.INFORMATION_MESSAGE
+                            JOptionPane.YES_NO_OPTION
                     );
-                } else {
-                    updateStatusLabel();
+
+                    if (choice == JOptionPane.YES_OPTION) {
+                        // Find the window that contains this panel
+                        java.awt.Window win = SwingUtilities.getWindowAncestor(TargetBoardPanel.this);
+                        if (win instanceof BattleshipWindow) {
+                            win.dispose();              // close old game window
+                            new BattleshipWindow();     // start fresh game
+                        }
+                    } else {
+                        // No = just leave the final board shown
+                        statusLabel.setText("Game over! " + winnerText + " wins.");
+                    }
                 }
             }
         });
@@ -95,6 +169,28 @@ public class TargetBoardPanel extends JPanel {
         } else {
             statusLabel.setText("Player 2's turn.");
         }
+    }
+
+    private Clip loadClip(String path) {
+        try {
+            AudioInputStream audioIn =
+                    AudioSystem.getAudioInputStream(getClass().getResource(path));
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioIn);
+            return clip;
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private void playClip(Clip clip) {
+        if(clip == null) return;
+        if (clip.isRunning()) {
+            clip.stop();
+        }
+        clip.setFramePosition(0);
+        clip.start();
     }
     @Override
     protected void paintComponent(Graphics g) {
