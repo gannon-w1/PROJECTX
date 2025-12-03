@@ -18,6 +18,12 @@ public class BattleshipWindow extends JFrame {
 	public BattleshipWindow() {
 		super("Battleship");
 
+        setIconImage(
+                Toolkit.getDefaultToolkit().getImage(
+                        getClass().getResource("/view/resources/GameIcon/logo.png")
+                )
+        );
+
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(900, 600);
         setLayout(new BorderLayout());
