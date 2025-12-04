@@ -213,26 +213,6 @@ public class BoardPanel extends JPanel {
 
     }
 
-    private void drawGhostShip(Graphics g) {
-        if(!drag.dragging)
-            return;
-
-        Image img = drag.horizontal ? drag.imageH : drag.imageV;
-        if(img == null)
-            return;
-
-        int x = drag.ghostCol * cellSize;
-        int y = drag.ghostRow * cellSize;
-
-        int w = drag.horizontal ? drag.shipLength * cellSize : cellSize;
-        int h = drag.horizontal ? cellSize : drag.shipLength * cellSize;
-
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-        g2.drawImage(img, x, y, w, h, this);
-        g2.dispose();
-    }
-
     public boolean allShipsPlaced() {
         for(int i = 1; i <= 5; i++) {
             if(!shipPlaced[i]) {
@@ -260,6 +240,25 @@ public class BoardPanel extends JPanel {
 
     public void lockPlacement() {
         placementLocked = true;
+    }
+    private void drawGhostShip(Graphics g) {
+        if(!drag.dragging)
+            return;
+
+        Image img = drag.horizontal ? drag.imageH : drag.imageV;
+        if(img == null)
+            return;
+
+        int x = drag.ghostCol * cellSize;
+        int y = drag.ghostRow * cellSize;
+
+        int w = drag.horizontal ? drag.shipLength * cellSize : cellSize;
+        int h = drag.horizontal ? cellSize : drag.shipLength * cellSize;
+
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+        g2.drawImage(img, x, y, w, h, this);
+        g2.dispose();
     }
 
     @Override
