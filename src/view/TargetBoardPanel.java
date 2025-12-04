@@ -25,8 +25,13 @@ public class TargetBoardPanel extends JPanel {
     private final Clip missClip;
     private final Clip sunkClip;
 
-    private JPanel turnOverlay;
+    private final JPanel turnOverlay;
     private String currentTurnText = "";
+
+    //flash animation for shots
+    private int flashRow = -1, flashCol = -1;
+    private float flashAlpha = 0f;
+    private javax.swing.Timer flashTimer;
 
     public TargetBoardPanel(Battleship game, JLabel statusLabel) {
         this.game = game;
@@ -101,6 +106,7 @@ public class TargetBoardPanel extends JPanel {
                     case "hit":
                         shots[row][col] = 2;
                         playClip(hitClip);
+                        startFlash(row,col);
                         break;
                     case "sunk":
                         playClip(sunkClip);
@@ -109,10 +115,12 @@ public class TargetBoardPanel extends JPanel {
                             int c = p.x; // col is x
                             shots[r][c] = 3;   // 3 = sunk (filled red)
                         }
+                        startFlash(row,col);
                         break;
                     case "miss":
                         shots[row][col] = 1;   // miss
                         playClip(missClip);
+                        startFlash(row,col);
 
                         String nextPlayer = (game.getCurrentPlayer() == game.getPlayer1())
                                 ? "Player 1"
@@ -199,6 +207,30 @@ public class TargetBoardPanel extends JPanel {
         clip.start();
     }
 
+    private void startFlash(int row, int col) {
+        flashRow = row;
+        flashCol = col;
+        flashAlpha = 0.8f;  // starting opacity (0–1)
+
+        // stop any current flash animation
+        if (flashTimer != null && flashTimer.isRunning()) {
+            flashTimer.stop();
+        }
+
+        flashTimer = new javax.swing.Timer(40, e -> {
+            flashAlpha -= 0.1f;       // fade out
+            if (flashAlpha <= 0f) {
+                flashAlpha = 0f;
+                flashRow = -1;
+                flashCol = -1;
+                flashTimer.stop();
+            }
+            repaint();
+        });
+        flashTimer.setRepeats(true);
+        flashTimer.start();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -248,6 +280,17 @@ public class TargetBoardPanel extends JPanel {
                     g2.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
                 }
             }
+        }
+        // draw flash overlay for the last shot
+        if (flashRow >= 0 && flashCol >= 0 && flashAlpha > 0f) {
+            int x = flashCol * cellSize;
+            int y = flashRow * cellSize;
+
+            Graphics2D g2d = (Graphics2D) g2.create();
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, flashAlpha));
+            g2d.setColor(Color.WHITE);
+            g2d.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+            g2d.dispose();
         }
     }
 }

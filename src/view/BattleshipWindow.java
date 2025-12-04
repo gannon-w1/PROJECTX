@@ -7,8 +7,8 @@ import model.Battleship;
 import model.Player;
 
 public class BattleshipWindow extends JFrame {
-    private Battleship game;
-    private BoardPanel playerBoard;
+    private final Battleship game;
+    private final BoardPanel playerBoard;
     private TargetBoardPanel enemyBoard;
     private final JPanel centerPanel;
     private final JLabel statusLabel;
