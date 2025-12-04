@@ -1,16 +1,16 @@
 package view;
 
-import model.Battleship;
-import model.Player;
-
-import javax.swing.*; 
 import java.awt.*;
 import java.awt.event.*;
+import javax.swing.*;
+import model.Battleship;
+import model.Computer;
+import model.Player;
 
 public class BattleshipWindow extends JFrame {
-    private final Battleship game;
-    private final BoardPanel playerBoard;
-    private final TargetBoardPanel enemyBoard;
+    private Battleship game;
+    private BoardPanel playerBoard;
+    private TargetBoardPanel enemyBoard;
     private final JPanel centerPanel;
     private final JLabel statusLabel;
     private boolean player1Done = false;
@@ -35,6 +35,9 @@ public class BattleshipWindow extends JFrame {
         statusLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
         add(statusLabel, BorderLayout.SOUTH);
+
+        JCheckBox computerCheckbox = new JCheckBox("Computer Opponent");
+        computerCheckbox.setSelected(false);
 
         game = new Battleship();
         DragController drag = new  DragController();
@@ -65,6 +68,7 @@ public class BattleshipWindow extends JFrame {
         JButton readyButton = new JButton("Ready");
         JButton resetButton = new JButton("Reset");
 
+        buttonPanel.add(computerCheckbox);
         buttonPanel.add(carrierButton);
         buttonPanel.add(battleshipButton);
         buttonPanel.add(cruiserButton);
@@ -139,6 +143,33 @@ public class BattleshipWindow extends JFrame {
                 }
 
                 player1Done = true;
+
+                // If computer opponent, create new game and jump to gameplay
+                if (computerCheckbox.isSelected()) {
+                    // Recreate game with Player 1 (who has ships) and Computer
+                    game = new Battleship(p1, new Computer());
+                    enemyBoard = new TargetBoardPanel(game, statusLabel);
+
+                    playerBoard.lockPlacement();
+                    carrierButton.setEnabled(false);
+                    battleshipButton.setEnabled(false);
+                    cruiserButton.setEnabled(false);
+                    submarineButton.setEnabled(false);
+                    destroyerButton.setEnabled(false);
+                    rotateButton.setEnabled(false);
+                    readyButton.setEnabled(false);
+                    computerCheckbox.setEnabled(false);
+
+                    centerPanel.removeAll();
+                    centerPanel.add(enemyBoard, BorderLayout.CENTER);
+                    centerPanel.revalidate();
+                    centerPanel.repaint();
+                    statusLabel.setText("Player 1's turn");
+
+                    //remove button to reset ship placement after game has started
+                    resetButton.setVisible(false);
+                    return;
+                }
 
                 // Clear the GUI board for Player 2 placement
                 playerBoard.resetBoard();

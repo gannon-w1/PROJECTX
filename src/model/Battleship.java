@@ -1,14 +1,18 @@
 package model;
 
 public class Battleship {
-    private final Player player1;
-    private final Player player2;
+    private Player player1;
+    private Player player2;
     private Player turn; // pointer to current player who's turn it is
 
     public Battleship() {
-        player1 = new Player();
-        player2 = new Player();
-        turn = player1;
+        this(new Player(), new Player());
+    }
+
+    public Battleship(Player p1, Player p2) {
+        this.player1 = p1;
+        this.player2 = p2;
+        this.turn = player1;
     }
 
     public Player getPlayer1() {

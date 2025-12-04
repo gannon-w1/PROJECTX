@@ -4,7 +4,7 @@ public class Player{
     private final Board board;
 
     public Player(){
-        board=  new Board(); // build player board
+        board = new Board(); // build player board
     }
 
     public Board getBoard(){ return board;}

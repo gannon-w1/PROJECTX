@@ -1,14 +1,13 @@
 package view;
 
-import model.Battleship;
-
-import javax.sound.sampled.*;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-
 import java.io.IOException;
+import javax.sound.sampled.*;
+import javax.swing.*;
+import model.Battleship;
+import model.Computer;
 
 public class TargetBoardPanel extends JPanel {
     private final int cellSize = 40;
@@ -16,6 +15,8 @@ public class TargetBoardPanel extends JPanel {
 
     private final int[][] shotsP1 = new int[gridSize][gridSize];
     private final int[][] shotsP2 = new int[gridSize][gridSize];
+    private final int[][] opponentShotsOnP1 = new int[gridSize][gridSize];  // where P2/Computer has fired at P1
+    private final int[][] opponentShotsOnP2 = new int[gridSize][gridSize];  // where P1 has fired at P2
 
     private final Battleship game;
     private final JLabel statusLabel;
@@ -87,9 +88,11 @@ public class TargetBoardPanel extends JPanel {
                     return;
                 }
 
-                int[][] shots = getCurrentShotsMatrix();
+                // Determine which opponent board to check (where this player is firing)
+                int[][] opponentShots = (game.getCurrentPlayer() == game.getPlayer1()) ? opponentShotsOnP2 : opponentShotsOnP1;
+                
                 // already shot here
-                if (shots[row][col] != 0) {
+                if (opponentShots[row][col] != 0) {
                     return;
                 }
 
@@ -99,21 +102,21 @@ public class TargetBoardPanel extends JPanel {
 
                 switch (result) {
                     case "hit":
-                        shots[row][col] = 2;
+                        opponentShots[row][col] = 2;
                         playClip(hitClip);
                         break;
                     case "sunk":
-                        shots[row][col] = 2;   // sunk
+                        opponentShots[row][col] = 2;   // sunk
                         playClip(sunkClip);
-                        markSunkShip(row, col, shots); //fills whole ship with red when sunk
+                        markSunkShip(row, col, opponentShots); //fills whole ship with red when sunk
                         break;
                     case "miss":
-                        shots[row][col] = 1;   // miss
+                        opponentShots[row][col] = 1;   // miss
                         playClip(missClip);
 
                         String nextPlayer = (game.getCurrentPlayer() == game.getPlayer1())
                                 ? "Player 1"
-                                : "Player 2";
+                                : "Computer";
                         currentTurnText = nextPlayer + "'s Turn";
 
                         new javax.swing.Timer(250, ev -> {
@@ -122,7 +125,22 @@ public class TargetBoardPanel extends JPanel {
                         }) {
                             {
                                 setRepeats(false);
-                            }}.start();
+                            }
+                        }.start();
+
+                        // If it's now the computer's turn, execute its move after delay
+                        if (game.getCurrentPlayer() instanceof Computer) {
+                            new javax.swing.Timer(1500, ev -> {
+                                if (!gameOver) {
+                                    turnOverlay.setVisible(false);
+                                    executeComputerMove();
+                                }
+                            }) {
+                                {
+                                    setRepeats(false);
+                                }
+                            }.start();
+                        }
                         break;
                     case "redundant":
                     case "invalid":
@@ -216,6 +234,77 @@ public class TargetBoardPanel extends JPanel {
             c += dc;
         }
     }
+
+    private void executeComputerMove() {
+        Computer computer = (Computer) game.getCurrentPlayer();
+        int[] target = computer.selectTarget();
+        int row = target[0];
+        int col = target[1];
+
+        String result = game.fireAt(row, col);
+        System.out.println("Computer fired at [" + row + ", " + col + "]: " + result);
+        // inform AI of the result so it can update its targeting
+        computer.notifyResult(row, col, result);
+
+        // Computer is Player 2, so record on opponentShotsOnP1 (shots at Player 1's board)
+        int[][] opponentShots = opponentShotsOnP1;
+        
+        switch (result) {
+            case "hit":
+                opponentShots[row][col] = 2;
+                playClip(hitClip);
+                break;
+            case "sunk":
+                opponentShots[row][col] = 2;
+                playClip(sunkClip);
+                markSunkShip(row, col, opponentShots);
+                break;
+            case "miss":
+                opponentShots[row][col] = 1;
+                playClip(missClip);
+                break;
+        }
+
+        repaint();
+        if (game.isGameOver()) {
+            gameOver = true;
+            var winner = game.getWinner();
+            String winnerText = (winner == game.getPlayer1()) ? "Player 1" : "Computer";
+
+            int choice = JOptionPane.showConfirmDialog(
+                    this,
+                    "Game over! " + winnerText + " wins!\nPlay again?",
+                    "Battleship",
+                    JOptionPane.YES_NO_OPTION
+            );
+
+            java.awt.Window win = SwingUtilities.getWindowAncestor(this);
+            if (choice == JOptionPane.YES_OPTION) {
+                if (win instanceof BattleshipWindow) {
+                    win.dispose();
+                    new BattleshipWindow();
+                }
+            } else {
+                win.dispose();
+            }
+        } else if (game.getCurrentPlayer() instanceof Computer && !result.equals("miss")) {
+            // Computer hit - it gets another turn
+            updateStatusLabel();
+            new javax.swing.Timer(1000, ev -> {
+                if (!gameOver) {
+                    executeComputerMove();
+                }
+            }) {
+                {
+                    setRepeats(false);
+                }
+            }.start();
+        } else {
+            // Player's turn
+            updateStatusLabel();
+        }
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -227,23 +316,31 @@ public class TargetBoardPanel extends JPanel {
             g.drawLine(0, i * cellSize, gridSize * cellSize, i * cellSize);
         }
 
-        int[][] shots = getCurrentShotsMatrix();
+        // Display the player's shots on the opponent's board
+        int[][] boardToDisplay;
+        if (game.getCurrentPlayer() == game.getPlayer1()) {
+            // P1's turn: show P1's shots on P2's board (opponentShotsOnP2)
+            boardToDisplay = opponentShotsOnP2;
+        } else {
+            // P2/Computer's turn: show P2's shots on P1's board (opponentShotsOnP1)
+            boardToDisplay = opponentShotsOnP1;
+        }
 
-        // shots
+        // shots (this player's attacks on opponent's board)
         for (int r = 0; r < gridSize; r++) {
             for (int c = 0; c < gridSize; c++) {
                 int x = c * cellSize;
                 int y = r * cellSize;
 
-                if (shots[r][c] == 1) { // miss
+                if (boardToDisplay[r][c] == 1) { // miss
                     g.setColor(Color.BLUE);
                     int pad = cellSize / 4;
                     g.drawOval(x + pad, y + pad, cellSize - 2 * pad, cellSize - 2 * pad);
-                } else if (shots[r][c] == 2) { // hit
+                } else if (boardToDisplay[r][c] == 2) { // hit
                     g.setColor(Color.RED);
                     g.drawLine(x + 5, y + 5, x + cellSize - 5, y + cellSize - 5);
                     g.drawLine(x + cellSize - 5, y + 5, x + 5, y + cellSize - 5);
-                } else if (shots[r][c] == 3) {
+                } else if (boardToDisplay[r][c] == 3) {
                     g.setColor(Color.RED);
                     g.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
                 }
