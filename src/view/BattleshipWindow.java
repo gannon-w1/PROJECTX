@@ -5,6 +5,8 @@ import java.awt.event.*;
 import javax.swing.*;
 import model.Battleship;
 import model.Player;
+import javax.sound.sampled.*;
+import java.io.IOException;
 
 public class BattleshipWindow extends JFrame {
     private final Battleship game;
@@ -13,6 +15,8 @@ public class BattleshipWindow extends JFrame {
     private final JPanel centerPanel;
     private final JLabel statusLabel;
     private boolean player1Done = false;
+    private Clip backGroundNoise;
+    private boolean musicOn = true;
 
 	public BattleshipWindow() {
 		super("Battleship");
@@ -60,8 +64,10 @@ public class BattleshipWindow extends JFrame {
         JButton submarineButton = new JButton("Submarine(2)");
         JButton destroyerButton = new JButton("Destroyer(1)");
         JButton rotateButton = new JButton("Rotate");
-        JButton readyButton = new JButton("Ready");
         JButton resetButton = new JButton("Reset");
+        JButton readyButton = new JButton("Ready");
+        JButton musicButton = new JButton("Music: On");
+
 
         buttonPanel.add(carrierButton);
         buttonPanel.add(battleshipButton);
@@ -71,6 +77,7 @@ public class BattleshipWindow extends JFrame {
         buttonPanel.add(rotateButton);
         buttonPanel.add(readyButton);
         buttonPanel.add(resetButton);
+        buttonPanel.add(musicButton);
 
         carrierButton.addMouseListener(new MouseAdapter() {
             @Override
@@ -207,14 +214,49 @@ public class BattleshipWindow extends JFrame {
             statusLabel.setText(placingPlayer + ": place your ships.");
         });
 
+        musicButton.addActionListener(e -> {
+            if (backGroundNoise == null) {
+                return;  // no music loaded, nothing to toggle
+            }
+
+            if (musicOn) {
+                backGroundNoise.stop();
+                musicOn = false;
+                musicButton.setText("Music: Off");
+            } else {
+                backGroundNoise.setFramePosition(0); // restart from beginning
+                backGroundNoise.loop(Clip.LOOP_CONTINUOUSLY);
+                backGroundNoise.start();
+                musicOn = true;
+                musicButton.setText("Music: On");
+            }
+        });
 
 
         sidebar.add(buttonPanel, BorderLayout.NORTH);
         add(sidebar, BorderLayout.EAST);
 
         setVisible(true);
+
+        backGroundNoise = loadBackgroundNoise("/view/sounds/backgroundnoise.wav");
+        if(backGroundNoise != null)
+            backGroundNoise.start();
 	}
 
+    private Clip loadBackgroundNoise(String path) {
+        try {
+            AudioInputStream audioIn = AudioSystem.getAudioInputStream(
+                    getClass().getResource(path)
+            );
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioIn);
+            clip.loop(Clip.LOOP_CONTINUOUSLY); // repeat forever
+            return clip;
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
 	public static void main(String[] args) {
 		new BattleshipWindow(); 
