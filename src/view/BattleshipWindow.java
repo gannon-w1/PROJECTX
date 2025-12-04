@@ -1,16 +1,15 @@
 package view;
 
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
 import model.Battleship;
 import model.Player;
 
-import javax.swing.*; 
-import java.awt.*;
-import java.awt.event.*;
-
 public class BattleshipWindow extends JFrame {
-    private final Battleship game;
-    private final BoardPanel playerBoard;
-    private final TargetBoardPanel enemyBoard;
+    private Battleship game;
+    private BoardPanel playerBoard;
+    private TargetBoardPanel enemyBoard;
     private final JPanel centerPanel;
     private final JLabel statusLabel;
     private boolean player1Done = false;
@@ -40,7 +39,6 @@ public class BattleshipWindow extends JFrame {
         DragController drag = new  DragController();
 
         playerBoard = new BoardPanel(drag);
-        enemyBoard = new TargetBoardPanel(game, statusLabel);
 
         centerPanel = new JPanel(new BorderLayout());
         centerPanel.add(playerBoard, BorderLayout.CENTER);
@@ -179,6 +177,8 @@ public class BattleshipWindow extends JFrame {
             rotateButton.setEnabled(false);
             readyButton.setEnabled(false);
 
+            enemyBoard = new TargetBoardPanel(game, statusLabel);
+
             centerPanel.removeAll();
             centerPanel.add(enemyBoard, BorderLayout.CENTER);
             centerPanel.revalidate();
@@ -192,6 +192,7 @@ public class BattleshipWindow extends JFrame {
 
         resetButton.addActionListener(e -> {
             playerBoard.resetBoard();
+            player1Done = false;
 
             carrierButton.setEnabled(true);
             battleshipButton.setEnabled(true);
@@ -200,6 +201,7 @@ public class BattleshipWindow extends JFrame {
             destroyerButton.setEnabled(true);
             rotateButton.setEnabled(true);
             readyButton.setEnabled(true);
+            drag.horizontal = true;
 
             String placingPlayer = player1Done ? "Player 2" : "Player 1";
             statusLabel.setText(placingPlayer + ": place your ships.");

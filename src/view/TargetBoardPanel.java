@@ -103,12 +103,9 @@ public class TargetBoardPanel extends JPanel {
                         playClip(hitClip);
                         break;
                     case "sunk":
+                        shots[row][col] = 2;   // sunk
                         playClip(sunkClip);
-                        for(java.awt.Point p : game.getLastSunkCells()) {
-                            int r = p.y;
-                            int c = p.x;
-                            shots[r][c] = 3;
-                        }
+                        markSunkShip(row, col, shots); //fills whole ship with red when sunk
                         break;
                     case "miss":
                         shots[row][col] = 1;   // miss
@@ -219,16 +216,15 @@ public class TargetBoardPanel extends JPanel {
             c += dc;
         }
     }
-
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        Graphics2D g2 = (Graphics2D) g;
+        Graphics2D g2 =  (Graphics2D) g;
 
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        for (int r = 0; r < gridSize; r++) {
-            for (int c = 0; c < gridSize; c++) {
+        for (int r = 0; r < 10; r++) {
+            for (int c = 0; c < 10; c++) {
                 int x = c * cellSize;
                 int y = r * cellSize;
 
@@ -240,7 +236,6 @@ public class TargetBoardPanel extends JPanel {
                 g2.fillRect(x, y, cellSize, cellSize);
             }
         }
-
         //draws vertical and horizontal lines
         g2.setColor(new Color(40, 40, 40));
         g2.setStroke(new BasicStroke(2f));
@@ -248,7 +243,6 @@ public class TargetBoardPanel extends JPanel {
             g2.drawLine(i * cellSize, 0, i * cellSize, gridSize * cellSize);
             g2.drawLine(0, i * cellSize, gridSize * cellSize, i * cellSize);
         }
-
 
         int[][] shots = getCurrentShotsMatrix();
 
