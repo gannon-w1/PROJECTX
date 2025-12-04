@@ -103,9 +103,12 @@ public class TargetBoardPanel extends JPanel {
                         playClip(hitClip);
                         break;
                     case "sunk":
-                        shots[row][col] = 2;   // sunk
                         playClip(sunkClip);
-                        markSunkShip(row, col, shots); //fills whole ship with red when sunk
+                        for(java.awt.Point p : game.getLastSunkCells()) {
+                            int r = p.y;
+                            int c = p.x;
+                            shots[r][c] = 3;
+                        }
                         break;
                     case "miss":
                         shots[row][col] = 1;   // miss
@@ -216,16 +219,36 @@ public class TargetBoardPanel extends JPanel {
             c += dc;
         }
     }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g;
 
-        // grid
-        g.setColor(Color.BLACK);
-        for (int i = 0; i <= gridSize; i++) {
-            g.drawLine(i * cellSize, 0, i * cellSize, gridSize * cellSize);
-            g.drawLine(0, i * cellSize, gridSize * cellSize, i * cellSize);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        for (int r = 0; r < gridSize; r++) {
+            for (int c = 0; c < gridSize; c++) {
+                int x = c * cellSize;
+                int y = r * cellSize;
+
+                if ((r + c) % 2 == 0)
+                    g2.setColor(new Color(215, 230, 255)); // light ocean blue
+                else
+                    g2.setColor(new Color(195, 215, 245)); // slightly darker blue
+
+                g2.fillRect(x, y, cellSize, cellSize);
+            }
         }
+
+        //draws vertical and horizontal lines
+        g2.setColor(new Color(40, 40, 40));
+        g2.setStroke(new BasicStroke(2f));
+        for (int i = 0; i <= gridSize; i++) {
+            g2.drawLine(i * cellSize, 0, i * cellSize, gridSize * cellSize);
+            g2.drawLine(0, i * cellSize, gridSize * cellSize, i * cellSize);
+        }
+
 
         int[][] shots = getCurrentShotsMatrix();
 
@@ -236,16 +259,16 @@ public class TargetBoardPanel extends JPanel {
                 int y = r * cellSize;
 
                 if (shots[r][c] == 1) { // miss
-                    g.setColor(Color.BLUE);
+                    g2.setColor(Color.BLUE);
                     int pad = cellSize / 4;
-                    g.drawOval(x + pad, y + pad, cellSize - 2 * pad, cellSize - 2 * pad);
+                    g2.drawOval(x + pad, y + pad, cellSize - 2 * pad, cellSize - 2 * pad);
                 } else if (shots[r][c] == 2) { // hit
-                    g.setColor(Color.RED);
-                    g.drawLine(x + 5, y + 5, x + cellSize - 5, y + cellSize - 5);
-                    g.drawLine(x + cellSize - 5, y + 5, x + 5, y + cellSize - 5);
+                    g2.setColor(Color.RED);
+                    g2.drawLine(x + 5, y + 5, x + cellSize - 5, y + cellSize - 5);
+                    g2.drawLine(x + cellSize - 5, y + 5, x + 5, y + cellSize - 5);
                 } else if (shots[r][c] == 3) {
-                    g.setColor(Color.RED);
-                    g.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+                    g2.setColor(Color.RED);
+                    g2.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
                 }
             }
         }

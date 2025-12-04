@@ -1,94 +1,123 @@
 package model;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Board {
-private final int size = 10;
-private final int[][] grid; // numbers on the grid mean: 0=empty, 1=ship, 2=hit, 3=miss
-private final List<PlacedShip> ships;
+    private final int size = 10;
+    // 0 = empty, 1 = ship, 2 = hit, 3 = miss
+    private final int[][] grid;
+    private final List<PlacedShip> ships;
 
-public Board() {
-    grid = new int[size][size];
-    ships = new ArrayList(); // initialize properly
-}
+    // cells (col,row) of the ship sunk by the LAST call to fireAt()
+    private final List<Point> lastSunkCells = new ArrayList<>();
 
-// place a ship on board
-public boolean placeShip(PlacedShip ship) { 
-    if(!canPlace(ship)){
-        return false; 
+    public Board() {
+        grid = new int[size][size];
+        ships = new ArrayList<>();
     }
 
-    ships.add(ship); // add ship to list
-    int r = ship.getRow();
-    int c = ship.getCol();
-    // build ship
-    for(int i = 0; i < ship.getLength(); i++){
-        if(ship.isHorizontal()){
-            grid[r][c+i] = 1;
+    // place a ship on board
+    public boolean placeShip(PlacedShip ship) {
+        if (!canPlace(ship)) {
+            return false;
         }
-        else{
-            grid[r+i][c] = 1;
-        }
-    }
-    return true;
-}
 
-// check placement
-public boolean canPlace(PlacedShip ship) { 
-    int r = ship.getRow();
-    int c = ship.getCol();
-    // build and loop through theoretical ship to check if any index of the ship is invalid
-    for(int i = 0; i < ship.getLength(); i++){
-        // rr and cc build the ship theoretically
-        int rr = ship.isHorizontal() ? r : r+i; 
-        int cc = ship.isHorizontal() ? c+i : c;
-        if(rr >= size || cc >= size) return false; // if ship does not fit on board
-        if(grid[rr][cc] != 0) return false; // if slot is not empty
-    }
-    return true; 
-}
+        ships.add(ship);
 
-// fire at a cell
-public String fireAt(int row, int col) { 
-    if(row < 0 || row >= size || col < 0 || col >= size) return "invalid"; // invalid cell
-    
-    // named the number values for readability in the switch statement
-    final int SHIP = 1;
-    final int EMPTY = 0;
+        int r = ship.getRow();
+        int c = ship.getCol();
 
-    int cell = grid[row][col];
-    switch(cell){
-        case SHIP: // hit
-            grid[row][col] = 2;
-            // check which ship was hit
-            for(PlacedShip s : ships){
-                if(s.contains(row, col)){
-                    s.hit();
-                    // check if ship is sunk
-                    if(s.isSunk()) return "sunk";
-                }
+        for (int i = 0; i < ship.getLength(); i++) {
+            if (ship.isHorizontal()) {
+                grid[r][c + i] = 1;
+            } else {
+                grid[r + i][c] = 1;
             }
-            return "hit";
-        case EMPTY: // miss
-            grid[row][col] = 3;
-            return "miss";
-        default: // already fired at cell, marked as "redundant" for easier use
-            return "redundant";
+        }
+        return true;
     }
-}
 
-// check if all ships on the board are sunk
-public boolean allShipsSunk() { 
-    // loop through ships to check if all ships sunk
-    for(PlacedShip s : ships){
-        if(!s.isSunk()) return false;
+    // check placement
+    public boolean canPlace(PlacedShip ship) {
+        int r = ship.getRow();
+        int c = ship.getCol();
+
+        for (int i = 0; i < ship.getLength(); i++) {
+            int rr = ship.isHorizontal() ? r      : r + i;
+            int cc = ship.isHorizontal() ? c + i  : c;
+
+            if (rr >= size || cc >= size) return false; // off board
+            if (grid[rr][cc] != 0) return false;        // already occupied
+        }
+        return true;
     }
-    return true;
-}
 
-// getters
-public int[][] getGrid() { return grid; }
-public List<PlacedShip> getShips() { return ships; }
+    // fire at a cell
+    public String fireAt(int row, int col) {
+        if (row < 0 || row >= size || col < 0 || col >= size) {
+            return "invalid";
+        }
 
+        // clear info about any previous sunk ship
+        lastSunkCells.clear();
+
+        final int EMPTY = 0;
+        final int SHIP  = 1;
+
+        int cell = grid[row][col];
+
+        switch (cell) {
+            case SHIP: // hit
+                grid[row][col] = 2;
+
+                // find which ship was hit
+                for (PlacedShip s : ships) {
+                    if (s.contains(row, col)) {
+                        s.hit();
+
+                        // if it just sunk, record ALL its cells
+                        if (s.isSunk()) {
+                            int r = s.getRow();
+                            int c = s.getCol();
+
+                            for (int i = 0; i < s.getLength(); i++) {
+                                int rr = s.isHorizontal() ? r      : r + i;
+                                int cc = s.isHorizontal() ? c + i  : c;
+                                // x = col, y = row
+                                lastSunkCells.add(new Point(cc, rr));
+                            }
+                            return "sunk";
+                        }
+                        break;
+                    }
+                }
+                return "hit";
+
+            case EMPTY: // miss
+                grid[row][col] = 3;
+                return "miss";
+
+            default:    // already targeted
+                return "redundant";
+        }
+    }
+
+    // check if all ships on the board are sunk
+    public boolean allShipsSunk() {
+        for (PlacedShip s : ships) {
+            if (!s.isSunk()) return false;
+        }
+        return true;
+    }
+
+    // getters (you may or may not actually use these from the GUI)
+    public int[][] getGrid() { return grid; }
+    public List<PlacedShip> getShips() { return ships; }
+
+    // expose last sunk ship cells for Battleship / UI
+    public List<Point> getLastSunkCells() {
+        return new ArrayList<>(lastSunkCells); // defensive copy
+    }
 }

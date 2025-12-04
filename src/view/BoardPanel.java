@@ -233,31 +233,6 @@ public class BoardPanel extends JPanel {
         g2.dispose();
     }
 
-    @Override
-	protected void paintComponent(Graphics g) {
-		super.paintComponent(g);
-
-		//draws vertical and horizontal lines
-		for(int i = 0; i <= gridSize; i++) {
-            g.setColor(Color.BLACK);
-			g.drawLine(i * cellSize,  0, i * cellSize, gridSize * cellSize);
-	        g.drawLine(0, i * cellSize, gridSize * cellSize, i * cellSize);
-		}
-
-        for (PlacedShip s : placedShips) {
-            Image img = getShipImageForType(s.type, s.horizontal);
-
-            int x = s.col * cellSize;
-            int y = s.row * cellSize;
-
-            int w = s.horizontal ? s.length * cellSize : cellSize;
-            int h = s.horizontal ? cellSize : s.length * cellSize;
-
-            g.drawImage(img, x, y, w, h, this);
-        }
-        drawGhostShip(g);
-	}
-
     public boolean allShipsPlaced() {
         for(int i = 1; i <= 5; i++) {
             if(!shipPlaced[i]) {
@@ -287,4 +262,46 @@ public class BoardPanel extends JPanel {
         placementLocked = true;
     }
 
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g;
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        for (int r = 0; r < 10; r++) {
+            for (int c = 0; c < 10; c++) {
+                int x = c * cellSize;
+                int y = r * cellSize;
+
+                if ((r + c) % 2 == 0)
+                    g2.setColor(new Color(215, 230, 255)); // light ocean blue
+                else
+                    g2.setColor(new Color(195, 215, 245)); // slightly darker blue
+
+                g2.fillRect(x, y, cellSize, cellSize);
+            }
+        }
+
+        //draws vertical and horizontal lines
+        g2.setColor(new Color(40, 40, 40));
+        g2.setStroke(new BasicStroke(2f));
+        for (int i = 0; i <= gridSize; i++) {
+            g2.drawLine(i * cellSize, 0, i * cellSize, gridSize * cellSize);
+            g2.drawLine(0, i * cellSize, gridSize * cellSize, i * cellSize);
+        }
+
+        for (PlacedShip s : placedShips) {
+            Image img = getShipImageForType(s.type, s.horizontal);
+
+            int x = s.col * cellSize;
+            int y = s.row * cellSize;
+
+            int w = s.horizontal ? s.length * cellSize : cellSize;
+            int h = s.horizontal ? cellSize : s.length * cellSize;
+
+            g2.drawImage(img, x, y, w, h, this);
+        }
+        drawGhostShip(g2);
+    }
 }
