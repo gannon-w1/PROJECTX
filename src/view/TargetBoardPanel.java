@@ -103,9 +103,12 @@ public class TargetBoardPanel extends JPanel {
                         playClip(hitClip);
                         break;
                     case "sunk":
-                        shots[row][col] = 2;   // sunk
                         playClip(sunkClip);
-                        markSunkShip(row, col, shots); //fills whole ship with red when sunk
+                        for (java.awt.Point p : game.getLastSunkCells()) {
+                            int r = p.y; // row is y
+                            int c = p.x; // col is x
+                            shots[r][c] = 3;   // 3 = sunk (filled red)
+                        }
                         break;
                     case "miss":
                         shots[row][col] = 1;   // miss
@@ -196,26 +199,6 @@ public class TargetBoardPanel extends JPanel {
         clip.start();
     }
 
-    private void markSunkShip(int row, int col, int[][] shots) {
-        shots[row][col] = 3;
-
-        markDirection(row, col, -1, 0, shots); //up
-        markDirection(row, col,  1, 0, shots); // down
-        markDirection(row, col,  0,-1, shots); // left
-        markDirection(row, col,  0, 1, shots); // right
-    }
-
-    private void markDirection(int row, int col, int dr, int dc, int[][] shots) {
-        int r = row + dr;
-        int c = col + dc;
-        int size = shots.length;
-
-        while (r >= 0 && r < size && c >= 0 && c < size && shots[r][c] == 2) {
-            shots[r][c] = 3;
-            r += dr;
-            c += dc;
-        }
-    }
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
